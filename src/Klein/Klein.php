@@ -310,6 +310,28 @@ class Klein
             'callback' => $callback,
         );
     }
+    
+    /**
+     * Takes a string of a class name and method seperated by an @ and returns an array
+     *
+     * @see Klein::respond()
+     * @param string $callback          A string containing a class name and method seperated by an @
+     * @return array                    An array containing an instance of the class and the method name as a string
+     */
+    protected function parseStringToCallable(string $callback)
+    {
+        // Separate out the class and method name
+        $parts = explode("@", $callback);
+        
+        // Point the class to the root namespace
+        $class = "\\".$parts[0];
+        
+        // Return the array
+        return array(
+            new $class,
+            $parts[1]
+        );
+    }
 
     /**
      * Add a new route to be matched on dispatch
@@ -333,20 +355,25 @@ class Klein
      * $router->respond( 'POST', '/endpoint', function() {
      *     echo 'this also works!!!!';
      * });
+     * // This also works!
+     * $router->respond( 'EndpointController@post' );
      * </code>
      *
      * @param string|array $method    HTTP Method to match
      * @param string $path              Route URI path to match
-     * @param callable $callback        Callable callback method to execute on route match
+     * @param callable|string $callback        Callable callback method to execute on route match
      * @return Route
      */
     public function respond($method, $path = '*', $callback = null)
     {
+        
         // Get the arguments in a very loose format
         extract(
             $this->parseLooseArgumentOrder(func_get_args()),
             EXTR_OVERWRITE
         );
+        
+        if(gettype($callback) == "string") $callback = $this->parseStringToCallable($callback);
 
         $route = $this->route_factory->build($callback, $path, $method);
 
